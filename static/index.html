@@ -78,26 +78,39 @@
       <div class="drawer-body">
         <p class="note">
           Everything below is opened by default — no <code>open</code> needed.
-          Geometry is <code>float</code>, colour channels are <code>int</code>
-          in 0–255, angles are radians.
+          Every value argument is labelled, geometry is <code>float</code>,
+          colour channels are <code>int</code> in 0–255, angles are radians.
+        </p>
+        <p class="note">
+          Two rules worth knowing. Where one value is clearly the subject it
+          stays <em>positional and last</em> —
+          <code>text ~x:20. ~y:30. "hi"</code>,
+          <code>noise ~y:t 0.5</code>,
+          <code>draw (fun () -&gt; …)</code>. And a function taking several
+          coequal values <em>plus</em> an optional one ends in
+          <code>()</code> — <code>fill ~r:255 ~g:0 ~b:0 ()</code>. OCaml can
+          only drop an optional argument when a positional one follows it, so
+          the <code>()</code> is what makes <code>?a</code> omissible; leave it
+          off and the compiler rejects the call rather than silently doing
+          nothing.
         </p>
 
         <h3>Canvas</h3>
         <ul>
-          <li><code>size : float -&gt; float -&gt; unit</code></li>
+          <li><code>size : w:float -&gt; h:float -&gt; unit</code></li>
           <li><code>width : unit -&gt; float</code> · <code>height : unit -&gt; float</code></li>
-          <li><code>background : ?a:int -&gt; int -&gt; int -&gt; int -&gt; unit</code></li>
+          <li><code>background : ?a:int -&gt; r:int -&gt; g:int -&gt; b:int -&gt; unit -&gt; unit</code></li>
           <li><code>background_gray : ?a:int -&gt; int -&gt; unit</code></li>
           <li><code>clear : unit -&gt; unit</code></li>
         </ul>
 
         <h3>Style</h3>
         <ul>
-          <li><code>fill : ?a:int -&gt; int -&gt; int -&gt; int -&gt; unit</code></li>
+          <li><code>fill : ?a:int -&gt; r:int -&gt; g:int -&gt; b:int -&gt; unit -&gt; unit</code></li>
           <li><code>fill_gray : ?a:int -&gt; int -&gt; unit</code></li>
-          <li><code>fill_hsb : ?a:int -&gt; float -&gt; float -&gt; float -&gt; unit</code> <span class="muted">h 0–360, s/b 0–100</span></li>
+          <li><code>fill_hsb : ?a:int -&gt; h:float -&gt; s:float -&gt; b:float -&gt; unit -&gt; unit</code> <span class="muted">h 0–360, s/b 0–100</span></li>
           <li><code>no_fill : unit -&gt; unit</code></li>
-          <li><code>stroke</code>, <code>stroke_gray</code>, <code>stroke_hsb</code>, <code>no_stroke</code></li>
+          <li><code>stroke</code>, <code>stroke_gray</code>, <code>stroke_hsb</code>, <code>no_stroke</code> <span class="muted">— same shapes as the fills</span></li>
           <li><code>stroke_weight : float -&gt; unit</code></li>
           <li><code>stroke_cap : [`Round|`Square|`Project] -&gt; unit</code></li>
           <li><code>stroke_join : [`Miter|`Bevel|`Round] -&gt; unit</code></li>
@@ -106,26 +119,28 @@
 
         <h3>Shapes</h3>
         <ul>
-          <li><code>point x y</code> · <code>line x1 y1 x2 y2</code></li>
-          <li><code>rect x y w h</code> · <code>square x y s</code> · <code>rect_rounded x y w h r</code></li>
-          <li><code>ellipse x y w h</code> · <code>circle x y d</code></li>
-          <li><code>arc x y w h start stop</code></li>
-          <li><code>triangle x1 y1 x2 y2 x3 y3</code></li>
-          <li><code>quad x1 y1 x2 y2 x3 y3 x4 y4</code></li>
-          <li><code>bezier x1 y1 cx1 cy1 cx2 cy2 x2 y2</code></li>
-          <li><code>begin_shape ()</code>, <code>vertex x y</code>, <code>bezier_vertex ...</code>, <code>end_shape ?close ()</code></li>
+          <li><code>point ~x ~y</code> · <code>line ~x1 ~y1 ~x2 ~y2</code></li>
+          <li><code>rect ?r ~x ~y ~w ~h ()</code> <span class="muted">— <code>?r</code> rounds the corners</span></li>
+          <li><code>square ?r ~x ~y ~s ()</code></li>
+          <li><code>ellipse ~x ~y ~w ~h</code> · <code>circle ~x ~y ~d</code></li>
+          <li><code>arc ~x ~y ~w ~h ~start ~stop</code></li>
+          <li><code>triangle ~x1 ~y1 ~x2 ~y2 ~x3 ~y3</code></li>
+          <li><code>quad ~x1 ~y1 ~x2 ~y2 ~x3 ~y3 ~x4 ~y4</code></li>
+          <li><code>bezier ~x1 ~y1 ~cx1 ~cy1 ~cx2 ~cy2 ~x2 ~y2</code></li>
+          <li><code>begin_shape ()</code>, <code>vertex ~x ~y</code>, <code>bezier_vertex ~cx1 ~cy1 ~cx2 ~cy2 ~x ~y</code>, <code>end_shape ?close ()</code></li>
         </ul>
 
         <h3>Transforms</h3>
         <ul>
           <li><code>push_matrix ()</code> / <code>pop_matrix ()</code> <span class="muted">(also save and restore the style)</span></li>
-          <li><code>translate x y</code> · <code>rotate a</code> · <code>scale s</code> · <code>scale_xy sx sy</code></li>
+          <li><code>translate ~x ~y</code> · <code>rotate a</code></li>
+          <li><code>scale ?y float</code> <span class="muted">— <code>scale 2.</code> uniform, <code>scale ~y:0.5 2.</code> not</span></li>
           <li><code>reset_matrix ()</code></li>
         </ul>
 
         <h3>Text</h3>
         <ul>
-          <li><code>text : string -&gt; float -&gt; float -&gt; unit</code></li>
+          <li><code>text : ?size:float -&gt; ?align:h_align -&gt; x:float -&gt; y:float -&gt; string -&gt; unit</code> <span class="muted">— <code>?size</code>/<code>?align</code> apply to that call only</span></li>
           <li><code>text_size : float -&gt; unit</code> · <code>text_font : string -&gt; unit</code></li>
           <li><code>text_align : ?v:[`Top|`Middle|`Baseline|`Bottom] -&gt; [`Left|`Center|`Right] -&gt; unit</code></li>
           <li><code>text_width : string -&gt; float</code></li>
@@ -133,7 +148,7 @@
 
         <h3>Loop &amp; input</h3>
         <ul>
-          <li><code>draw : (unit -&gt; unit) -&gt; unit</code> <span class="muted">runs every frame</span></li>
+          <li><code>draw : ?fps:float -&gt; (unit -&gt; unit) -&gt; unit</code> <span class="muted">runs every frame</span></li>
           <li><code>no_loop ()</code> · <code>loop ()</code> · <code>frame_rate : float -&gt; unit</code></li>
           <li><code>frame_count : unit -&gt; int</code> · <code>millis : unit -&gt; float</code></li>
           <li><code>mouse_x ()</code>, <code>mouse_y ()</code>, <code>pmouse_x ()</code>, <code>pmouse_y ()</code></li>
@@ -143,10 +158,11 @@
 
         <h3>Maths</h3>
         <ul>
-          <li><code>random : ?min:float -&gt; float -&gt; float</code> · <code>random_int lo hi</code> · <code>random_seed : int -&gt; unit</code></li>
-          <li><code>noise : ?y:float -&gt; ?z:float -&gt; float -&gt; float</code> · <code>noise_seed : int -&gt; unit</code></li>
-          <li><code>map_range v lo1 hi1 lo2 hi2</code> · <code>norm v lo hi</code> · <code>lerp a b t</code></li>
-          <li><code>dist x1 y1 x2 y2</code> · <code>mag x y</code> · <code>constrain v lo hi</code> · <code>sq x</code></li>
+          <li><code>random ?min float</code> · <code>random_int ?min int</code> · <code>random_seed : int -&gt; unit</code></li>
+          <li><code>noise ?y ?z float</code> <span class="muted">— 1, 2 or 3D Perlin noise, 0–1</span> · <code>noise_seed : int -&gt; unit</code></li>
+          <li><code>map_range ~src:(lo, hi) ~dst:(lo, hi) v</code></li>
+          <li><code>norm ~lo ~hi v</code> · <code>constrain ~lo ~hi v</code> · <code>lerp ~a ~b ~t</code></li>
+          <li><code>dist ~x1 ~y1 ~x2 ~y2</code> · <code>mag ~x ~y</code> · <code>sq x</code></li>
           <li><code>radians d</code> · <code>degrees r</code> · <code>pi</code> · <code>two_pi</code> · <code>half_pi</code></li>
         </ul>
 

@@ -5,12 +5,14 @@
     the way they do in Processing:
 
     {[
-      size 400. 400.;
-      background 255 255 255;
-      fill 255 0 0;
-      ellipse 200. 200. 120. 120.
+      size ~w:400. ~h:400.;
+      background ~r:255 ~g:255 ~b:255;
+      fill ~r:255 ~g:0 ~b:0;
+      ellipse ~x:200. ~y:200. ~w:120. ~h:120.
     ]}
 
+    Every function that takes more than one value labels them, so there is no
+    argument order to remember and no way to transpose [w] and [h] silently.
     Geometry is in [float]s (as in Processing), colour channels are [int]s in
     the 0..255 range. *)
 
@@ -135,12 +137,13 @@ let rgb_of_hsb h s v =
 
 let reset_transform () =
   let r = device_ratio () in
-  (ctx ())##setTransform (nf r) (nf 0.) (nf 0.) (nf r) (nf 0.) (nf 0.)
+  (ctx ())##setTransform (nf r) (nf 0.) (nf 0.) (nf r) (nf 0.) (nf 0.);
+  ()
 
 let events_installed = ref false
 let install_events : (unit -> unit) ref = ref (fun () -> ())
 
-let size w h =
+let size ~w ~h =
   let c = canvas () in
   width_ := w;
   height_ := h;
@@ -156,23 +159,27 @@ let size w h =
 (* Style                                                               *)
 (* ------------------------------------------------------------------ *)
 
-let fill ?a r g b = (!st).fill_c <- Some (rgba ?a r g b)
-let fill_gray ?a v = fill ?a v v v
-let fill_hsb ?a h s b = let r, g, bb = rgb_of_hsb h s b in fill ?a r g bb
+(* [fill], [stroke] and [background] take several coequal values plus an
+   optional alpha, so they end in [()] — that is what lets [?a] be omitted. *)
+let fill ?a ~r ~g ~b () = (!st).fill_c <- Some (rgba ?a r g b)
+let fill_gray ?a v = fill ?a ~r:v ~g:v ~b:v ()
+let fill_hsb ?a ~h ~s ~b () = let r, g, bb = rgb_of_hsb h s b in fill ?a ~r ~g ~b:bb ()
 let no_fill () = (!st).fill_c <- None
-let stroke ?a r g b = (!st).stroke_c <- Some (rgba ?a r g b)
-let stroke_gray ?a v = stroke ?a v v v
-let stroke_hsb ?a h s b = let r, g, bb = rgb_of_hsb h s b in stroke ?a r g bb
+let stroke ?a ~r ~g ~b () = (!st).stroke_c <- Some (rgba ?a r g b)
+let stroke_gray ?a v = stroke ?a ~r:v ~g:v ~b:v ()
+let stroke_hsb ?a ~h ~s ~b () = let r, g, bb = rgb_of_hsb h s b in stroke ?a ~r ~g ~b:bb ()
 let no_stroke () = (!st).stroke_c <- None
 let stroke_weight w = (!st).weight <- w
 
 let stroke_cap (c : cap) =
   (ctx ())##.lineCap :=
-    js (match c with `Round -> "round" | `Square -> "butt" | `Project -> "square")
+    js (match c with `Round -> "round" | `Square -> "butt" | `Project -> "square");
+  ()
 
 let stroke_join (j : join) =
   (ctx ())##.lineJoin :=
-    js (match j with `Miter -> "miter" | `Bevel -> "bevel" | `Round -> "round")
+    js (match j with `Miter -> "miter" | `Bevel -> "bevel" | `Round -> "round");
+  ()
 
 let rect_mode (m : mode) = (!st).rect_m <- m
 let ellipse_mode (m : mode) = (!st).ell_m <- m
@@ -193,31 +200,37 @@ let apply_stroke () =
       cx##.lineWidth := nf (!st).weight;
       true
 
+(* A [unit meth] call evaluates to JS [undefined] rather than OCaml's unit
+   value, and the toplevel prints that as "<unknown constructor>". Every public
+   function below therefore ends on a real [()]. *)
 let paint () =
   let cx = ctx () in
   if apply_fill () then cx##fill;
-  if apply_stroke () then cx##stroke
+  if apply_stroke () then cx##stroke;
+  ()
 
 (* ------------------------------------------------------------------ *)
 (* Background / clear                                                  *)
 (* ------------------------------------------------------------------ *)
 
-let background ?a r g b =
+let background ?a ~r ~g ~b () =
   let cx = ctx () in
   cx##save;
   reset_transform ();
   cx##.fillStyle := js (rgba ?a r g b);
   cx##fillRect (nf 0.) (nf 0.) (nf !width_) (nf !height_);
-  cx##restore
+  cx##restore;
+  ()
 
-let background_gray ?a v = background ?a v v v
+let background_gray ?a v = background ?a ~r:v ~g:v ~b:v ()
 
 let clear () =
   let cx = ctx () in
   cx##save;
   reset_transform ();
   cx##clearRect (nf 0.) (nf 0.) (nf !width_) (nf !height_);
-  cx##restore
+  cx##restore;
+  ()
 
 (* ------------------------------------------------------------------ *)
 (* Transforms                                                          *)
@@ -235,10 +248,15 @@ let pop_matrix () =
       st := s;
       style_stack := tl
 
-let translate x y = (ctx ())##translate (nf x) (nf y)
-let rotate a = (ctx ())##rotate (nf a)
-let scale s = (ctx ())##scale (nf s) (nf s)
-let scale_xy sx sy = (ctx ())##scale (nf sx) (nf sy)
+let translate ~x ~y = (ctx ())##translate (nf x) (nf y); ()
+let rotate a = (ctx ())##rotate (nf a); ()
+
+(* [scale 2.] is uniform; pass [~y] as well for a non-uniform scale. *)
+let scale ?y x =
+  let y = match y with Some y -> y | None -> x in
+  (ctx ())##scale (nf x) (nf y);
+  ()
+
 let reset_matrix () = reset_transform ()
 
 (* ------------------------------------------------------------------ *)
@@ -257,7 +275,7 @@ let pi = 4.0 *. atan 1.0
 let two_pi = 2. *. pi
 let half_pi = pi /. 2.
 
-let point x y =
+let point ~x ~y =
   let cx = ctx () in
   match (!st).stroke_c with
   | None -> ()
@@ -266,38 +284,37 @@ let point x y =
       let w = Float.max 1. (!st).weight in
       cx##beginPath;
       cx##arc (nf x) (nf y) (nf (w /. 2.)) (nf 0.) (nf two_pi) Js._false;
-      cx##fill
+      cx##fill;
+      ()
 
-let line x1 y1 x2 y2 =
+let line ~x1 ~y1 ~x2 ~y2 =
   let cx = ctx () in
   cx##beginPath;
   cx##moveTo (nf x1) (nf y1);
   cx##lineTo (nf x2) (nf y2);
-  if apply_stroke () then cx##stroke
+  if apply_stroke () then cx##stroke;
+  ()
 
-let rect x y w h =
+(* [?r] rounds the corners. *)
+let rect ?r ~x ~y ~w ~h () =
   let x, y, w, h = box (!st).rect_m x y w h in
   let cx = ctx () in
   cx##beginPath;
-  cx##rect (nf x) (nf y) (nf w) (nf h);
+  (match r with
+  | Some r when r > 0. ->
+      let r = Float.min r (Float.min (Float.abs w /. 2.) (Float.abs h /. 2.)) in
+      cx##moveTo (nf (x +. r)) (nf y);
+      cx##arcTo (nf (x +. w)) (nf y) (nf (x +. w)) (nf (y +. h)) (nf r);
+      cx##arcTo (nf (x +. w)) (nf (y +. h)) (nf x) (nf (y +. h)) (nf r);
+      cx##arcTo (nf x) (nf (y +. h)) (nf x) (nf y) (nf r);
+      cx##arcTo (nf x) (nf y) (nf (x +. w)) (nf y) (nf r);
+      cx##closePath
+  | _ -> cx##rect (nf x) (nf y) (nf w) (nf h));
   paint ()
 
-let rect_rounded x y w h r =
-  let x, y, w, h = box (!st).rect_m x y w h in
-  let r = Float.min r (Float.min (Float.abs w /. 2.) (Float.abs h /. 2.)) in
-  let cx = ctx () in
-  cx##beginPath;
-  cx##moveTo (nf (x +. r)) (nf y);
-  cx##arcTo (nf (x +. w)) (nf y) (nf (x +. w)) (nf (y +. h)) (nf r);
-  cx##arcTo (nf (x +. w)) (nf (y +. h)) (nf x) (nf (y +. h)) (nf r);
-  cx##arcTo (nf x) (nf (y +. h)) (nf x) (nf y) (nf r);
-  cx##arcTo (nf x) (nf y) (nf (x +. w)) (nf y) (nf r);
-  cx##closePath;
-  paint ()
+let square ?r ~x ~y ~s () = rect ?r ~x ~y ~w:s ~h:s ()
 
-let square x y s = rect x y s s
-
-let ellipse x y w h =
+let ellipse ~x ~y ~w ~h =
   let x, y, w, h = box (!st).ell_m x y w h in
   let cx = ctx () in
   cx##beginPath;
@@ -307,9 +324,9 @@ let ellipse x y w h =
     (nf 0.) (nf 0.) (nf two_pi) Js._false;
   paint ()
 
-let circle x y d = ellipse x y d d
+let circle ~x ~y ~d = ellipse ~x ~y ~w:d ~h:d
 
-let arc x y w h start stop =
+let arc ~x ~y ~w ~h ~start ~stop =
   let x, y, w, h = box (!st).ell_m x y w h in
   let cxc = x +. (w /. 2.) and cyc = y +. (h /. 2.) in
   let rx = Float.abs w /. 2. and ry = Float.abs h /. 2. in
@@ -330,7 +347,7 @@ let arc x y w h start stop =
     if apply_stroke () then cx##stroke
   end
 
-let triangle x1 y1 x2 y2 x3 y3 =
+let triangle ~x1 ~y1 ~x2 ~y2 ~x3 ~y3 =
   let cx = ctx () in
   cx##beginPath;
   cx##moveTo (nf x1) (nf y1);
@@ -339,7 +356,7 @@ let triangle x1 y1 x2 y2 x3 y3 =
   cx##closePath;
   paint ()
 
-let quad x1 y1 x2 y2 x3 y3 x4 y4 =
+let quad ~x1 ~y1 ~x2 ~y2 ~x3 ~y3 ~x4 ~y4 =
   let cx = ctx () in
   cx##beginPath;
   cx##moveTo (nf x1) (nf y1);
@@ -349,12 +366,13 @@ let quad x1 y1 x2 y2 x3 y3 x4 y4 =
   cx##closePath;
   paint ()
 
-let bezier x1 y1 cx1 cy1 cx2 cy2 x2 y2 =
+let bezier ~x1 ~y1 ~cx1 ~cy1 ~cx2 ~cy2 ~x2 ~y2 =
   let cx = ctx () in
   cx##beginPath;
   cx##moveTo (nf x1) (nf y1);
   cx##bezierCurveTo (nf cx1) (nf cy1) (nf cx2) (nf cy2) (nf x2) (nf y2);
-  if apply_stroke () then cx##stroke
+  if apply_stroke () then cx##stroke;
+  ()
 
 (* Free-form shapes -------------------------------------------------- *)
 
@@ -365,16 +383,18 @@ let begin_shape () =
   cx##beginPath;
   shape_started := false
 
-let vertex x y =
+let vertex ~x ~y =
   let cx = ctx () in
   if !shape_started then cx##lineTo (nf x) (nf y)
   else begin
     cx##moveTo (nf x) (nf y);
     shape_started := true
-  end
+  end;
+  ()
 
-let bezier_vertex cx1 cy1 cx2 cy2 x y =
-  (ctx ())##bezierCurveTo (nf cx1) (nf cy1) (nf cx2) (nf cy2) (nf x) (nf y)
+let bezier_vertex ~cx1 ~cy1 ~cx2 ~cy2 ~x ~y =
+  (ctx ())##bezierCurveTo (nf cx1) (nf cy1) (nf cx2) (nf cy2) (nf x) (nf y);
+  ()
 
 let end_shape ?(close = false) () =
   let cx = ctx () in
@@ -386,7 +406,8 @@ let end_shape ?(close = false) () =
 (* ------------------------------------------------------------------ *)
 
 let apply_font () =
-  (ctx ())##.font := js (Printf.sprintf "%gpx %s" (!st).t_size (!st).t_font)
+  (ctx ())##.font := js (Printf.sprintf "%gpx %s" (!st).t_size (!st).t_font);
+  ()
 
 let text_size s =
   (!st).t_size <- s;
@@ -400,7 +421,11 @@ let text_align ?(v : v_align = `Baseline) (h : h_align) =
   (!st).t_h <- h;
   (!st).t_v <- v
 
-let text str x y =
+(* [?size] and [?align] apply to this call only. *)
+let text ?size ?align ~x ~y str =
+  let saved_size = (!st).t_size and saved_align = (!st).t_h in
+  (match size with Some s -> (!st).t_size <- s | None -> ());
+  (match align with Some a -> (!st).t_h <- a | None -> ());
   let cx = ctx () in
   apply_font ();
   cx##.textAlign :=
@@ -414,7 +439,9 @@ let text str x y =
       | `Bottom -> "bottom");
   if apply_fill () then cx##fillText (js str) (nf x) (nf y);
   if apply_stroke () && (!st).weight > 0. && (!st).fill_c = None then
-    cx##strokeText (js str) (nf x) (nf y)
+    cx##strokeText (js str) (nf x) (nf y);
+  (!st).t_size <- saved_size;
+  (!st).t_h <- saved_align
 
 let text_width str =
   apply_font ();
@@ -424,18 +451,20 @@ let text_width str =
 (* Maths helpers                                                       *)
 (* ------------------------------------------------------------------ *)
 
+(* The value being transformed stays positional, and comes last. *)
 let random ?(min = 0.) max = min +. Random.float (max -. min)
-let random_int lo hi = if hi <= lo then lo else lo + Random.int (hi - lo)
+let random_int ?(min = 0) max = if max <= min then min else min + Random.int (max - min)
 let random_seed s = Random.init s
-let dist x1 y1 x2 y2 = sqrt (((x2 -. x1) ** 2.) +. ((y2 -. y1) ** 2.))
-let mag x y = sqrt ((x *. x) +. (y *. y))
-let lerp a b t = a +. ((b -. a) *. t)
-let norm v lo hi = if hi = lo then 0. else (v -. lo) /. (hi -. lo)
+let dist ~x1 ~y1 ~x2 ~y2 = sqrt (((x2 -. x1) ** 2.) +. ((y2 -. y1) ** 2.))
+let mag ~x ~y = sqrt ((x *. x) +. (y *. y))
+let lerp ~a ~b ~t = a +. ((b -. a) *. t)
+let norm ~lo ~hi v = if hi = lo then 0. else (v -. lo) /. (hi -. lo)
 
-let map_range v lo1 hi1 lo2 hi2 =
+(* [map_range ~src:(0., 1.) ~dst:(0., 400.) v] *)
+let map_range ~src:(lo1, hi1) ~dst:(lo2, hi2) v =
   if hi1 = lo1 then lo2 else lo2 +. ((v -. lo1) /. (hi1 -. lo1) *. (hi2 -. lo2))
 
-let constrain v lo hi = if v < lo then lo else if v > hi then hi else v
+let constrain ~lo ~hi v = if v < lo then lo else if v > hi then hi else v
 let radians d = d *. pi /. 180.
 let degrees r = r *. 180. /. pi
 let sq x = x *. x
@@ -479,7 +508,7 @@ let noise ?(y = 0.) ?(z = 0.) x =
   let aa = perm.(a land 255) + zi and ab = perm.((a + 1) land 255) + zi in
   let b = perm.((xi + 1) land 255) + yi in
   let ba = perm.(b land 255) + zi and bb = perm.((b + 1) land 255) + zi in
-  let l = lerp in
+  let l a b t = lerp ~a ~b ~t in
   let res =
     l
       (l
@@ -610,7 +639,8 @@ and request_frame () =
         : Dom_html.animation_frame_request_id)
   end
 
-let draw f =
+let draw ?fps f =
+  (match fps with Some v -> target_fps := Float.max 1. v | None -> ());
   hs.on_draw <- Some f;
   if !start_time = 0. then start_time := perf_now ();
   looping := true;
@@ -713,6 +743,6 @@ let reset () =
        cx##restore
      done
    with _ -> ());
-  size 400. 400.;
-  background 255 255 255;
+  size ~w:400. ~h:400.;
+  background ~r:255 ~g:255 ~b:255 ();
   shape_started := false

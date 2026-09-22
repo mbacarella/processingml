@@ -14,11 +14,11 @@ the genuine article.
 
 ```ocaml
 let () =
-  size 400. 400.;
-  background 252 250 245;
+  size ~w:400. ~h:400.;
+  background ~r:252 ~g:250 ~b:245 ();
   no_stroke ();
-  fill 244 114 94;
-  ellipse 150. 150. 180. 180.
+  fill ~r:244 ~g:114 ~b:94 ();
+  ellipse ~x:150. ~y:150. ~w:180. ~h:180.
 ```
 
 ## Quick start
@@ -58,27 +58,50 @@ definitions from an earlier run stay in scope, exactly like a toplevel.
 
 ## The drawing library
 
-`lib/processing.ml`. Conventions:
+`lib/processing.ml`, with the full signature in `lib/processing.mli`.
+Conventions:
 
 * geometry is `float` (as in Processing), colour channels are `int` in `0..255`
-* every colour function takes an optional `?a` alpha: `fill ~a:128 255 0 0`
 * angles are radians; `radians`/`degrees` convert
 * Processing's overloads become separate names: `fill` / `fill_gray` / `fill_hsb`
 * enum-ish arguments are polymorphic variants: ``rect_mode `Center``
+
+**Every value argument is labelled**, so there is no argument order to remember
+and no way to transpose `~w` and `~h` silently. Two consequences:
+
+* Where one value is clearly the subject it stays *positional, and last*:
+  `text ~x:20. ~y:30. "hi"`, `noise ~y:t 0.5`, `draw (fun () -> ...)`.
+* A function taking several coequal values *and* an optional one ends in `()`:
+  `fill ~r:255 ~g:0 ~b:0 ()`. OCaml only drops an optional argument when a
+  positional one follows it, so that `()` is what makes `?a` omissible. Forget
+  it and you get a type error, not a silent no-op:
+
+  ```
+  # fill ~r:255 ~g:0 ~b:0;;
+  Error: This expression has type ?a:int -> unit -> unit
+         but an expression was expected of type unit
+  ```
+
+  The seven such functions are `fill`, `stroke`, `background`, `fill_hsb`,
+  `stroke_hsb`, `rect` and `square`.
+
+Labels may be given in any order, and a fully-applied call may still omit them
+entirely (with a `labels-omitted` warning), so pasted Processing code mostly
+still works.
 
 ```ocaml
 (* a draw loop *)
 let x = ref 200.
 
 let () =
-  size 400. 400.;
-  draw (fun () ->
-      background 24 26 33;
+  size ~w:400. ~h:400.;
+  draw ~fps:30. (fun () ->
+      background ~r:24 ~g:26 ~b:33 ();
       x := !x +. 2.;
       if !x > width () then x := 0.;
-      fill 255 209 102;
+      fill ~r:255 ~g:209 ~b:102 ();
       no_stroke ();
-      ellipse !x 200. 40. 40.)
+      ellipse ~x:!x ~y:200. ~w:40. ~h:40.)
 ```
 
 Errors raised inside `draw` (or any event callback) are printed to the console
