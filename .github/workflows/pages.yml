@@ -1,7 +1,8 @@
 # Builds the playground and publishes static/ to GitHub Pages.
 #
-# toplevel.js is ~21 MB, so it is built here rather than committed — that keeps
-# a fresh 21 MB blob out of the repo on every rebuild.
+# toplevel.js is ~4.9 MB of generated output, so it is built here rather than
+# committed — that keeps a fresh multi-megabyte blob out of the repo on every
+# rebuild.
 name: Pages
 
 on:

@@ -38,7 +38,7 @@ server-side anything: the compiler is in the JavaScript. If you want it on
 localhost over HTTP, `make serve` is just
 `python3 -m http.server -d static 8000`.
 
-`toplevel.js` is ~21 MB raw and ~3 MB gzipped, so serve it with compression
+`toplevel.js` is ~4.9 MB raw and ~1.0 MB gzipped, so serve it with compression
 enabled; GitHub Pages, S3+CloudFront and nginx (`gzip_types application/javascript`)
 all do that for you.
 
@@ -97,11 +97,29 @@ build.sh               dune → toplevel.bc → js_of_ocaml --toplevel → tople
 static/                index.html, style.css, app.js, examples.js (+ toplevel.js)
 ```
 
-`build.sh` lists the units to export with `jsoo_listunits` (stdlib,
-js_of_ocaml, the toplevel, and `Processing`) and passes `-I` at the
+`build.sh` lists the units to export with `jsoo_listunits` (stdlib, the
+js_of_ocaml runtime, the toplevel, and `Processing`) and passes `-I` at the
 `.processing.objs` directory so js_of_ocaml embeds `processing.cmi` under
 `/static/cmis` — that is what lets the in-browser type-checker resolve
 `Processing`.
+
+### Why toplevel.js is the size it is
+
+`--toplevel` embeds the `.cmi` of every exported unit, because the in-browser
+type-checker needs the interfaces. Those interfaces dominate the output, so the
+export list is the size knob:
+
+| exported | `toplevel.js` |
+|---|---|
+| stdlib + runtime + toplevel + `Processing` | 4.9 MB (1.0 MB gzipped) |
+| …plus the `js_of_ocaml` bindings | 21 MB |
+
+`Dom_html.cmi` alone is 3.4 MB on disk and inflates roughly fourfold once
+embedded as a JavaScript string. `Processing` already wraps the canvas, so the
+bindings are left out; add `js_of_ocaml` back to the `jsoo_listunits` call in
+`build.sh` if you want people to reach the raw DOM. `lib/processing.mli` keeps
+the library's own interface free of `Js.t` types, which is what makes that
+omission safe.
 
 The page talks to the toplevel through a small JS API:
 
@@ -119,11 +137,11 @@ from inside a draw loop shows up in the console as it happens.
 ## Deploying
 
 `.github/workflows/pages.yml` builds the project on GitHub Actions and publishes
-`static/` to GitHub Pages, so the 21 MB `toplevel.js` never enters the repo —
+`static/` to GitHub Pages, so the generated `toplevel.js` never enters the repo —
 it is rebuilt on each push to `main`. Enable it once under
 *Settings → Pages → Source → GitHub Actions*.
 
-Pages gzips JavaScript on the way out, so the visitor downloads ~3 MB.
+Pages gzips JavaScript on the way out, so the visitor downloads ~1 MB.
 
 ## Known limitations
 
