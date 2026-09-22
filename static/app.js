@@ -90,11 +90,14 @@
 
   const STORAGE_KEY = "processingml.code";
 
-  const encode = (s) =>
-    btoa(String.fromCharCode(...new TextEncoder().encode(s)))
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");
+  const encode = (s) => {
+    const bytes = new TextEncoder().encode(s);
+    // Chunked: String.fromCharCode(...bytes) overflows the stack on a long sketch.
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 0x8000)
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  };
 
   const decode = (s) => {
     const b = atob(s.replace(/-/g, "+").replace(/_/g, "/"));
@@ -155,8 +158,8 @@
   /* The console is a real toplevel prompt: it evaluates in the same session as
      the editor, and without resetting the canvas, so you can poke at a running
      sketch. */
-  const history = [];
-  let historyAt = 0;
+  const replHistory = [];
+  let replHistoryAt = 0;
 
   function initRepl() {
     const input = $("repl");
@@ -164,8 +167,8 @@
       e.preventDefault();
       const line = input.value.trim();
       if (!ready || !line) return;
-      history.push(line);
-      historyAt = history.length;
+      replHistory.push(line);
+      replHistoryAt = replHistory.length;
       input.value = "";
       write("prompt", "# " + line + "\n");
       try {
@@ -176,11 +179,11 @@
     });
     input.addEventListener("keydown", (e) => {
       if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
-      if (!history.length) return;
+      if (!replHistory.length) return;
       e.preventDefault();
-      historyAt += e.key === "ArrowUp" ? -1 : 1;
-      historyAt = Math.max(0, Math.min(history.length, historyAt));
-      input.value = history[historyAt] || "";
+      replHistoryAt += e.key === "ArrowUp" ? -1 : 1;
+      replHistoryAt = Math.max(0, Math.min(replHistory.length, replHistoryAt));
+      input.value = replHistory[replHistoryAt] || "";
     });
   }
 
@@ -296,14 +299,45 @@
     });
   }
 
+  /* navigator.clipboard only exists in a secure context, and throws
+     synchronously rather than rejecting when it does not, so the legacy path
+     has to be a real fallback. */
+  async function copyToClipboard(text) {
+    try {
+      if (window.isSecureContext && navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (_) {
+      /* fall through */
+    }
+    try {
+      const scratch = document.createElement("textarea");
+      scratch.value = text;
+      scratch.setAttribute("readonly", "");
+      scratch.style.cssText = "position:fixed;top:0;left:0;opacity:0";
+      document.body.appendChild(scratch);
+      scratch.select();
+      const ok = document.execCommand("copy");
+      scratch.remove();
+      return ok;
+    } catch (_) {
+      return false;
+    }
+  }
+
   function share() {
-    const url =
-      location.origin + location.pathname + "#code=" + encode(getCode());
-    history.replaceState(null, "", url);
-    navigator.clipboard
-      .writeText(url)
-      .then(() => toast("Link copied to the clipboard"))
-      .catch(() => toast("Link is in the address bar"));
+    // location.origin is the string "null" on file://.
+    const fragment = "#code=" + encode(getCode());
+    const url = location.href.split("#")[0] + fragment;
+    try {
+      window.history.replaceState(null, "", url);
+    } catch (_) {
+      location.hash = fragment.slice(1); // some browsers refuse this on file://
+    }
+    copyToClipboard(url).then((ok) =>
+      toast(ok ? "Link copied to the clipboard" : "Link is in the address bar")
+    );
   }
 
   function init() {
