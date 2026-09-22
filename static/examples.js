@@ -9,10 +9,13 @@ window.EXAMPLES = [
    Every value is labelled, so there is no argument order to remember and
    no way to transpose ~w and ~h by accident. A call ending in () is one
    that takes an optional argument — here ~a (alpha) and ~r (corner radius).
-   Geometry is float, colour channels are int 0..255. *)
+
+   Numbers are int when they count something or land on the pixel grid
+   (canvas size, text, colour channels, fps) and float when they are
+   geometry that gets computed, rotated or animated. *)
 
 let () =
-  size ~w:400. ~h:400.;
+  size ~w:400 ~h:400;
   background ~r:252 ~g:250 ~b:245 ();
 
   no_stroke ();
@@ -29,7 +32,7 @@ let () =
 
   no_stroke ();
   fill ~r:40 ~g:40 ~b:40 ();
-  text ~size:15. ~x:20. ~y:32. "ellipse, rect, triangle"
+  text ~size:15 ~x:20 ~y:32 "ellipse, rect, triangle"
 `,
   },
 
@@ -59,7 +62,7 @@ let leg ?(w = 15.) ~hip:(hx, hy) ~knee:(kx, ky) ~foot:(fx, fy) colour =
   ellipse ~x:fx ~y:(fy +. 2.) ~w:(w +. 6.) ~h:9.
 
 let () =
-  size ~w:400. ~h:400.;
+  size ~w:400 ~h:400;
   let r, g, b = sand in
   background ~r ~g ~b ();
   no_stroke ();
@@ -143,7 +146,7 @@ let vx = ref 3.2 and vy = ref 2.3
 let r = 26.
 
 let () =
-  size ~w:400. ~h:400.;
+  size ~w:400 ~h:400;
   draw (fun () ->
       background ~r:24 ~g:26 ~b:33 ();
 
@@ -157,7 +160,7 @@ let () =
       ellipse ~x:!x ~y:!y ~w:(r *. 2.) ~h:(r *. 2.);
 
       fill ~r:130 ~g:136 ~b:150 ();
-      text ~size:12. ~x:12. ~y:22.
+      text ~size:12 ~x:12 ~y:22
         (Printf.sprintf "frame %d" (frame_count ())))
 `,
   },
@@ -167,7 +170,7 @@ let () =
     code: `(* Move the mouse over the canvas; click to wipe it. *)
 
 let () =
-  size ~w:400. ~h:400.;
+  size ~w:400 ~h:400;
   background ~r:250 ~g:250 ~b:252 ();
   no_stroke ();
   draw (fun () ->
@@ -208,7 +211,7 @@ let rec branch ~len ~depth =
   end
 
 let () =
-  size ~w:400. ~h:400.;
+  size ~w:400 ~h:400;
   background ~r:250 ~g:248 ~b:240 ();
   stroke ~r:74 ~g:56 ~b:44 ();
   push_matrix ();
@@ -224,7 +227,7 @@ let () =
    [noise] keeps x positional, so ~y and ~z are optional extra dimensions. *)
 
 let () =
-  size ~w:400. ~h:400.;
+  size ~w:400 ~h:400;
   background ~r:16 ~g:17 ~b:22 ();
   no_stroke ();
   draw (fun () ->
@@ -250,7 +253,7 @@ let () =
   {
     name: "Rainbow spiral",
     code: `let () =
-  size ~w:400. ~h:400.;
+  size ~w:400 ~h:400;
   background ~r:255 ~g:255 ~b:255 ();
   no_stroke ();
   for i = 0 to 520 do
@@ -301,9 +304,9 @@ let step g =
 let world = ref (fresh ())
 
 let () =
-  size ~w:400. ~h:400.;
+  size ~w:400 ~h:400;
   mouse_pressed (fun () -> world := fresh ());
-  draw ~fps:12. (fun () ->
+  draw ~fps:12 (fun () ->
       background ~r:15 ~g:17 ~b:21 ();
       no_stroke ();
       fill ~r:126 ~g:231 ~b:135 ();
@@ -333,17 +336,20 @@ let first_15 = List.of_seq (Seq.take 15 fib)
 let () = List.iteri (Printf.printf "fib %2d = %d\\n") first_15
 
 let () =
-  size ~w:400. ~h:400.;
+  size ~w:400 ~h:400;
   background ~r:255 ~g:255 ~b:255 ();
-  text_size 13.;
+  text_size 13;
   List.iteri
     (fun i n ->
-      let y = 30. +. (float_of_int i *. 24.) in
+      (* text lands on the pixel grid, so its position is an int; the bar is
+         geometry, so it is not *)
+      let row = 30 + (i * 24) in
       fill ~r:30 ~g:30 ~b:40 ();
-      text ~x:20. ~y (Printf.sprintf "%2d" n);
+      text ~x:20 ~y:row (Printf.sprintf "%2d" n);
       no_stroke ();
       fill ~a:140 ~r:90 ~g:150 ~b:230 ();
-      rect ~x:60. ~y:(y -. 11.) ~w:(float_of_int n *. 0.6) ~h:14. ())
+      rect ~x:60. ~y:(float_of_int row -. 11.) ~w:(float_of_int n *. 0.6)
+        ~h:14. ())
     first_15
 `,
   },

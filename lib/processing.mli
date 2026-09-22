@@ -24,17 +24,29 @@
       are [fill], [stroke], [background], [fill_hsb], [stroke_hsb], [rect] and
       [square].
 
-    Geometry is in [float]s, as in Processing. Colour channels are [int]s in
-    0..255, and every colour function takes an optional [?a] alpha in the same
-    range. Angles are radians. *)
+    {2 Numbers}
+
+    A value is an [int] when it counts something or lands on the pixel grid and
+    is never meaningfully fractional: canvas [size], text placement and size,
+    frame rates, colour channels (0..255), seeds. It is a [float] when it is
+    geometry — anything that gets computed, interpolated, rotated or animated.
+
+    Shape coordinates are therefore [float]s, as they are in Processing, p5.js
+    and the canvas API itself: they come out of trigonometry, Perlin noise,
+    [mouse_x ()] and accumulating velocity, and the canvas anti-aliases
+    sub-pixel positions, so rounding them makes slow motion visibly steppy.
+
+    Angles are radians. *)
 
 (** {1 Canvas} *)
 
-val size : w:float -> h:float -> unit
+val size : w:int -> h:int -> unit
 (** Resizes the sketch. Defaults to 400x400. *)
 
 val width : unit -> float
 val height : unit -> float
+(** Returned as [float]s: unlike the canvas dimensions you {e set}, these are
+    almost always read back into coordinate arithmetic. *)
 
 val background : ?a:int -> r:int -> g:int -> b:int -> unit -> unit
 (** Paints over the whole canvas. *)
@@ -127,16 +139,17 @@ val reset_matrix : unit -> unit
 
 (** {1 Text} *)
 
-val text : ?size:float -> ?align:h_align -> x:float -> y:float -> string -> unit
-(** [?size] and [?align] apply to this call only. *)
+val text : ?size:int -> ?align:h_align -> x:int -> y:int -> string -> unit
+(** Text sits on the pixel grid, so its placement and size are [int]s.
+    [?size] and [?align] apply to this call only. *)
 
-val text_size : float -> unit
+val text_size : int -> unit
 
 val text_font : string -> unit
 (** Any CSS font family, e.g. ["Roboto Mono"]. *)
 
 val text_align : ?v:v_align -> h_align -> unit
-val text_width : string -> float
+val text_width : string -> int
 
 (** {1 Maths} *)
 
@@ -169,13 +182,13 @@ val sq : float -> float
 
 (** {1 The draw loop} *)
 
-val draw : ?fps:float -> (unit -> unit) -> unit
+val draw : ?fps:int -> (unit -> unit) -> unit
 (** [draw f] runs [f] once per frame. An exception escaping [f] is reported on
     stderr and stops the sketch. *)
 
 val no_loop : unit -> unit
 val loop : unit -> unit
-val frame_rate : float -> unit
+val frame_rate : int -> unit
 val frame_count : unit -> int
 
 val millis : unit -> float

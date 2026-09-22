@@ -5,7 +5,7 @@
     the way they do in Processing:
 
     {[
-      size ~w:400. ~h:400.;
+      size ~w:400 ~h:400;
       background ~r:255 ~g:255 ~b:255;
       fill ~r:255 ~g:0 ~b:0;
       ellipse ~x:200. ~y:200. ~w:120. ~h:120.
@@ -145,13 +145,14 @@ let install_events : (unit -> unit) ref = ref (fun () -> ())
 
 let size ~w ~h =
   let c = canvas () in
-  width_ := w;
-  height_ := h;
+  let wf = float_of_int w and hf = float_of_int h in
+  width_ := wf;
+  height_ := hf;
   let r = device_ratio () in
-  c##.width := int_of_float (w *. r);
-  c##.height := int_of_float (h *. r);
-  c##.style##.width := js (Printf.sprintf "%gpx" w);
-  c##.style##.height := js (Printf.sprintf "%gpx" h);
+  c##.width := int_of_float (wf *. r);
+  c##.height := int_of_float (hf *. r);
+  c##.style##.width := js (Printf.sprintf "%dpx" w);
+  c##.style##.height := js (Printf.sprintf "%dpx" h);
   reset_transform ();
   !install_events ()
 
@@ -410,7 +411,7 @@ let apply_font () =
   ()
 
 let text_size s =
-  (!st).t_size <- s;
+  (!st).t_size <- float_of_int s;
   apply_font ()
 
 let text_font f =
@@ -424,7 +425,7 @@ let text_align ?(v : v_align = `Baseline) (h : h_align) =
 (* [?size] and [?align] apply to this call only. *)
 let text ?size ?align ~x ~y str =
   let saved_size = (!st).t_size and saved_align = (!st).t_h in
-  (match size with Some s -> (!st).t_size <- s | None -> ());
+  (match size with Some s -> (!st).t_size <- float_of_int s | None -> ());
   (match align with Some a -> (!st).t_h <- a | None -> ());
   let cx = ctx () in
   apply_font ();
@@ -437,6 +438,7 @@ let text ?size ?align ~x ~y str =
       | `Middle -> "middle"
       | `Baseline -> "alphabetic"
       | `Bottom -> "bottom");
+  let x = float_of_int x and y = float_of_int y in
   if apply_fill () then cx##fillText (js str) (nf x) (nf y);
   if apply_stroke () && (!st).weight > 0. && (!st).fill_c = None then
     cx##strokeText (js str) (nf x) (nf y);
@@ -445,7 +447,7 @@ let text ?size ?align ~x ~y str =
 
 let text_width str =
   apply_font ();
-  fn ((ctx ())##measureText (js str))##.width
+  int_of_float (Float.round (fn ((ctx ())##measureText (js str))##.width))
 
 (* ------------------------------------------------------------------ *)
 (* Maths helpers                                                       *)
@@ -640,7 +642,7 @@ and request_frame () =
   end
 
 let draw ?fps f =
-  (match fps with Some v -> target_fps := Float.max 1. v | None -> ());
+  (match fps with Some v -> target_fps := Float.max 1. (float_of_int v) | None -> ());
   hs.on_draw <- Some f;
   if !start_time = 0. then start_time := perf_now ();
   looping := true;
@@ -652,7 +654,7 @@ let loop () =
   looping := true;
   request_frame ()
 
-let frame_rate fps = target_fps := Float.max 1. fps
+let frame_rate fps = target_fps := Float.max 1. (float_of_int fps)
 let mouse_pressed f = hs.on_mouse_pressed <- Some f
 let mouse_released f = hs.on_mouse_released <- Some f
 let mouse_moved f = hs.on_mouse_moved <- Some f
@@ -743,6 +745,6 @@ let reset () =
        cx##restore
      done
    with _ -> ());
-  size ~w:400. ~h:400.;
+  size ~w:400 ~h:400;
   background ~r:255 ~g:255 ~b:255 ();
   shape_started := false

@@ -14,7 +14,7 @@ the genuine article.
 
 ```ocaml
 let () =
-  size ~w:400. ~h:400.;
+  size ~w:400 ~h:400;
   background ~r:252 ~g:250 ~b:245 ();
   no_stroke ();
   fill ~r:244 ~g:114 ~b:94 ();
@@ -61,7 +61,14 @@ definitions from an earlier run stay in scope, exactly like a toplevel.
 `lib/processing.ml`, with the full signature in `lib/processing.mli`.
 Conventions:
 
-* geometry is `float` (as in Processing), colour channels are `int` in `0..255`
+* a number is an `int` when it counts something or lands on the pixel grid —
+  canvas `size`, text placement and size, colour channels (`0..255`), frame
+  rates, seeds — and a `float` when it is geometry that gets computed,
+  interpolated, rotated or animated
+* shape coordinates are therefore `float`, as in Processing, p5.js and the
+  canvas API: they come out of trigonometry, Perlin noise, `mouse_x ()` and
+  accumulating velocity, and the canvas anti-aliases sub-pixel positions, so
+  rounding them makes slow motion visibly steppy
 * angles are radians; `radians`/`degrees` convert
 * Processing's overloads become separate names: `fill` / `fill_gray` / `fill_hsb`
 * enum-ish arguments are polymorphic variants: ``rect_mode `Center``
@@ -94,8 +101,8 @@ still works.
 let x = ref 200.
 
 let () =
-  size ~w:400. ~h:400.;
-  draw ~fps:30. (fun () ->
+  size ~w:400 ~h:400;
+  draw ~fps:30 (fun () ->
       background ~r:24 ~g:26 ~b:33 ();
       x := !x +. 2.;
       if !x > width () then x := 0.;

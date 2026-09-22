@@ -77,9 +77,12 @@
       </div>
       <div class="drawer-body">
         <p class="note">
-          Everything below is opened by default — no <code>open</code> needed.
-          Every value argument is labelled, geometry is <code>float</code>,
-          colour channels are <code>int</code> in 0–255, angles are radians.
+          Everything below is opened by default — no <code>open</code> needed,
+          and every value argument is labelled. A number is an <code>int</code>
+          when it counts something or lands on the pixel grid — canvas
+          <code>size</code>, text, colour channels, frame rates, seeds — and a
+          <code>float</code> when it is geometry that gets computed, rotated or
+          animated. Angles are radians.
         </p>
         <p class="note">
           Two rules worth knowing. Where one value is clearly the subject it
@@ -97,8 +100,8 @@
 
         <h3>Canvas</h3>
         <ul>
-          <li><code>size : w:float -&gt; h:float -&gt; unit</code></li>
-          <li><code>width : unit -&gt; float</code> · <code>height : unit -&gt; float</code></li>
+          <li><code>size : w:int -&gt; h:int -&gt; unit</code></li>
+          <li><code>width : unit -&gt; float</code> · <code>height : unit -&gt; float</code> <span class="muted">— floats, since they are read back into coordinate arithmetic</span></li>
           <li><code>background : ?a:int -&gt; r:int -&gt; g:int -&gt; b:int -&gt; unit -&gt; unit</code></li>
           <li><code>background_gray : ?a:int -&gt; int -&gt; unit</code></li>
           <li><code>clear : unit -&gt; unit</code></li>
@@ -140,16 +143,16 @@
 
         <h3>Text</h3>
         <ul>
-          <li><code>text : ?size:float -&gt; ?align:h_align -&gt; x:float -&gt; y:float -&gt; string -&gt; unit</code> <span class="muted">— <code>?size</code>/<code>?align</code> apply to that call only</span></li>
-          <li><code>text_size : float -&gt; unit</code> · <code>text_font : string -&gt; unit</code></li>
+          <li><code>text : ?size:int -&gt; ?align:h_align -&gt; x:int -&gt; y:int -&gt; string -&gt; unit</code> <span class="muted">— <code>?size</code>/<code>?align</code> apply to that call only</span></li>
+          <li><code>text_size : int -&gt; unit</code> · <code>text_font : string -&gt; unit</code></li>
           <li><code>text_align : ?v:[`Top|`Middle|`Baseline|`Bottom] -&gt; [`Left|`Center|`Right] -&gt; unit</code></li>
-          <li><code>text_width : string -&gt; float</code></li>
+          <li><code>text_width : string -&gt; int</code></li>
         </ul>
 
         <h3>Loop &amp; input</h3>
         <ul>
-          <li><code>draw : ?fps:float -&gt; (unit -&gt; unit) -&gt; unit</code> <span class="muted">runs every frame</span></li>
-          <li><code>no_loop ()</code> · <code>loop ()</code> · <code>frame_rate : float -&gt; unit</code></li>
+          <li><code>draw : ?fps:int -&gt; (unit -&gt; unit) -&gt; unit</code> <span class="muted">runs every frame</span></li>
+          <li><code>no_loop ()</code> · <code>loop ()</code> · <code>frame_rate : int -&gt; unit</code></li>
           <li><code>frame_count : unit -&gt; int</code> · <code>millis : unit -&gt; float</code></li>
           <li><code>mouse_x ()</code>, <code>mouse_y ()</code>, <code>pmouse_x ()</code>, <code>pmouse_y ()</code></li>
           <li><code>mouse_is_pressed ()</code>, <code>key_is_pressed ()</code>, <code>key_char ()</code>, <code>key_code ()</code></li>
