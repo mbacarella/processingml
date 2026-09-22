@@ -1,0 +1,10 @@
+(executable
+ (name toplevel)
+ (modes byte)
+ (libraries js_of_ocaml js_of_ocaml-toplevel processing)
+ (flags
+  (:standard -w +a-4-9-40-41-42-44-45-48-70 -warn-error -a))
+ (link_flags
+  (:standard -linkall))
+ (preprocess
+  (pps js_of_ocaml-ppx)))

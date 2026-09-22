@@ -1,0 +1,5 @@
+_build/
+_opam/
+
+# built by ./build.sh; the Pages workflow rebuilds it in CI
+static/toplevel.js

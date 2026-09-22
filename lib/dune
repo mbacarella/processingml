@@ -1,0 +1,7 @@
+(library
+ (name processing)
+ (libraries js_of_ocaml)
+ (flags
+  (:standard -w +a-4-9-40-41-42-44-45-48-70 -warn-error -a))
+ (preprocess
+  (pps js_of_ocaml-ppx)))

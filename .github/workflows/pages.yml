@@ -1,0 +1,49 @@
+# Builds the playground and publishes static/ to GitHub Pages.
+#
+# toplevel.js is ~21 MB, so it is built here rather than committed — that keeps
+# a fresh 21 MB blob out of the repo on every rebuild.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Creates the project-local ./_opam switch that build.sh expects.
+      - uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "4.14.2"
+
+      - run: opam install -y dune js_of_ocaml js_of_ocaml-ppx js_of_ocaml-toplevel
+
+      - run: ./build.sh
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: static
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ProcessingML — an OCaml playground with a canvas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='38' fill='%23f2705a'/></svg>"
+    />
+  </head>
+  <body>
+    <header class="bar">
+      <div class="brand">
+        <span class="dot"></span>
+        <h1>ProcessingML</h1>
+        <span class="badge" id="version">OCaml · js_of_ocaml</span>
+      </div>
+      <div class="actions">
+        <select id="examples" title="Load an example sketch">
+          <option value="">Examples…</option>
+        </select>
+        <button id="run" class="primary" title="Ctrl/Cmd + Enter">▶ Run</button>
+        <button id="stop" title="Pause the draw loop">❚❚ Stop</button>
+        <button id="reset" title="Clear the canvas and stop the sketch">Reset</button>
+        <button id="share" title="Copy a link that contains this sketch">Copy link</button>
+        <button id="ref-toggle" title="Library reference">Reference</button>
+      </div>
+    </header>
+
+    <main id="layout">
+      <section class="pane editor-pane">
+        <textarea id="code" spellcheck="false"></textarea>
+      </section>
+
+      <div class="splitter" id="splitter" title="Drag to resize"></div>
+
+      <section class="pane output-pane">
+        <div class="canvas-wrap">
+          <canvas id="pml-canvas" width="400" height="400"></canvas>
+        </div>
+        <div class="console-wrap">
+          <div class="console-head">
+            <span>Console</span>
+            <button id="clear-console" class="link">clear</button>
+          </div>
+          <pre id="console" aria-live="polite"></pre>
+          <form class="repl" id="repl-form">
+            <span class="prompt">#</span>
+            <input
+              id="repl"
+              type="text"
+              spellcheck="false"
+              autocomplete="off"
+              placeholder="evaluate an expression — the sketch keeps running"
+            />
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <aside id="reference" class="drawer" hidden>
+      <div class="drawer-head">
+        <h2>Processing library reference</h2>
+        <button id="ref-close" class="link">close</button>
+      </div>
+      <div class="drawer-body">
+        <p class="note">
+          Everything below is opened by default — no <code>open</code> needed.
+          Geometry is <code>float</code>, colour channels are <code>int</code>
+          in 0–255, angles are radians.
+        </p>
+
+        <h3>Canvas</h3>
+        <ul>
+          <li><code>size : float -&gt; float -&gt; unit</code></li>
+          <li><code>width : unit -&gt; float</code> · <code>height : unit -&gt; float</code></li>
+          <li><code>background : ?a:int -&gt; int -&gt; int -&gt; int -&gt; unit</code></li>
+          <li><code>background_gray : ?a:int -&gt; int -&gt; unit</code></li>
+          <li><code>clear : unit -&gt; unit</code></li>
+        </ul>
+
+        <h3>Style</h3>
+        <ul>
+          <li><code>fill : ?a:int -&gt; int -&gt; int -&gt; int -&gt; unit</code></li>
+          <li><code>fill_gray : ?a:int -&gt; int -&gt; unit</code></li>
+          <li><code>fill_hsb : ?a:int -&gt; float -&gt; float -&gt; float -&gt; unit</code> <span class="muted">h 0–360, s/b 0–100</span></li>
+          <li><code>no_fill : unit -&gt; unit</code></li>
+          <li><code>stroke</code>, <code>stroke_gray</code>, <code>stroke_hsb</code>, <code>no_stroke</code></li>
+          <li><code>stroke_weight : float -&gt; unit</code></li>
+          <li><code>stroke_cap : [`Round|`Square|`Project] -&gt; unit</code></li>
+          <li><code>stroke_join : [`Miter|`Bevel|`Round] -&gt; unit</code></li>
+          <li><code>rect_mode</code>, <code>ellipse_mode : [`Corner|`Corners|`Center|`Radius] -&gt; unit</code></li>
+        </ul>
+
+        <h3>Shapes</h3>
+        <ul>
+          <li><code>point x y</code> · <code>line x1 y1 x2 y2</code></li>
+          <li><code>rect x y w h</code> · <code>square x y s</code> · <code>rect_rounded x y w h r</code></li>
+          <li><code>ellipse x y w h</code> · <code>circle x y d</code></li>
+          <li><code>arc x y w h start stop</code></li>
+          <li><code>triangle x1 y1 x2 y2 x3 y3</code></li>
+          <li><code>quad x1 y1 x2 y2 x3 y3 x4 y4</code></li>
+          <li><code>bezier x1 y1 cx1 cy1 cx2 cy2 x2 y2</code></li>
+          <li><code>begin_shape ()</code>, <code>vertex x y</code>, <code>bezier_vertex ...</code>, <code>end_shape ?close ()</code></li>
+        </ul>
+
+        <h3>Transforms</h3>
+        <ul>
+          <li><code>push_matrix ()</code> / <code>pop_matrix ()</code> <span class="muted">(also save and restore the style)</span></li>
+          <li><code>translate x y</code> · <code>rotate a</code> · <code>scale s</code> · <code>scale_xy sx sy</code></li>
+          <li><code>reset_matrix ()</code></li>
+        </ul>
+
+        <h3>Text</h3>
+        <ul>
+          <li><code>text : string -&gt; float -&gt; float -&gt; unit</code></li>
+          <li><code>text_size : float -&gt; unit</code> · <code>text_font : string -&gt; unit</code></li>
+          <li><code>text_align : ?v:[`Top|`Middle|`Baseline|`Bottom] -&gt; [`Left|`Center|`Right] -&gt; unit</code></li>
+          <li><code>text_width : string -&gt; float</code></li>
+        </ul>
+
+        <h3>Loop &amp; input</h3>
+        <ul>
+          <li><code>draw : (unit -&gt; unit) -&gt; unit</code> <span class="muted">runs every frame</span></li>
+          <li><code>no_loop ()</code> · <code>loop ()</code> · <code>frame_rate : float -&gt; unit</code></li>
+          <li><code>frame_count : unit -&gt; int</code> · <code>millis : unit -&gt; float</code></li>
+          <li><code>mouse_x ()</code>, <code>mouse_y ()</code>, <code>pmouse_x ()</code>, <code>pmouse_y ()</code></li>
+          <li><code>mouse_is_pressed ()</code>, <code>key_is_pressed ()</code>, <code>key_char ()</code>, <code>key_code ()</code></li>
+          <li><code>mouse_pressed</code>, <code>mouse_released</code>, <code>mouse_moved</code>, <code>mouse_dragged</code>, <code>mouse_clicked</code>, <code>key_pressed</code>, <code>key_released</code> <span class="muted">— all take a <code>(unit -&gt; unit)</code> callback</span></li>
+        </ul>
+
+        <h3>Maths</h3>
+        <ul>
+          <li><code>random : ?min:float -&gt; float -&gt; float</code> · <code>random_int lo hi</code> · <code>random_seed : int -&gt; unit</code></li>
+          <li><code>noise : ?y:float -&gt; ?z:float -&gt; float -&gt; float</code> · <code>noise_seed : int -&gt; unit</code></li>
+          <li><code>map_range v lo1 hi1 lo2 hi2</code> · <code>norm v lo hi</code> · <code>lerp a b t</code></li>
+          <li><code>dist x1 y1 x2 y2</code> · <code>mag x y</code> · <code>constrain v lo hi</code> · <code>sq x</code></li>
+          <li><code>radians d</code> · <code>degrees r</code> · <code>pi</code> · <code>two_pi</code> · <code>half_pi</code></li>
+        </ul>
+
+        <p class="note">
+          The whole OCaml standard library is available too, and the toplevel
+          keeps its state between runs — only the canvas is reset.
+        </p>
+      </div>
+    </aside>
+
+    <div id="boot" class="boot">
+      <div class="boot-card">
+        <div class="spinner"></div>
+        <p id="boot-text">Downloading the OCaml toplevel…</p>
+        <p class="muted small">A whole OCaml compiler, compiled to JavaScript.</p>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/mllike/mllike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+    <script src="examples.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
