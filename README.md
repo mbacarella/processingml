@@ -35,8 +35,8 @@ xdg-open static/index.html     # …and that is enough
 self-contained — `index.html`, three small scripts, a stylesheet and
 `toplevel.js` — and it runs from `file://` or from any static host. There is no
 server-side anything: the compiler is in the JavaScript. If you want it on
-localhost over HTTP, `make serve` is just
-`python3 -m http.server -d static 8000`.
+localhost over HTTP, `python3 -m http.server -d static 8000` is the whole
+story.
 
 `toplevel.js` is ~4.9 MB raw and ~1.0 MB gzipped, so serve it with compression
 enabled; GitHub Pages, S3+CloudFront and nginx (`gzip_types application/javascript`)
