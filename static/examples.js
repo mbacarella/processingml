@@ -2,43 +2,14 @@
 // visitor sees.
 window.EXAMPLES = [
   {
-    name: "Shapes",
-    code: `(* ProcessingML — the OCaml toplevel, with a canvas attached.
-   Press Run, or hit Ctrl/Cmd + Enter.
-
-   Every value is labelled, so there is no argument order to remember and
-   no way to transpose ~w and ~h by accident. A call ending in () is one
-   that takes an optional argument — here ~a (alpha) and ~r (corner radius).
-
-   Numbers are int when they count something or land on the pixel grid
-   (canvas size, text, colour channels, fps) and float when they are
-   geometry that gets computed, rotated or animated. *)
-
-let () =
-  size ~w:400 ~h:400;
-  background ~r:252 ~g:250 ~b:245 ();
-
-  no_stroke ();
-  fill ~r:244 ~g:114 ~b:94 ();
-  ellipse ~x:150. ~y:150. ~w:180. ~h:180.;
-
-  fill ~a:190 ~r:80 ~g:140 ~b:220 ();
-  rect ~r:14. ~x:170. ~y:170. ~w:170. ~h:170. ();
-
-  no_fill ();
-  stroke ~r:40 ~g:40 ~b:40 ();
-  stroke_weight 3.;
-  triangle ~x1:60. ~y1:350. ~x2:200. ~y2:240. ~x3:340. ~y3:350.;
-
-  no_stroke ();
-  fill ~r:40 ~g:40 ~b:40 ();
-  text ~size:15 ~x:20 ~y:32 "ellipse, rect, triangle"
-`,
-  },
-
-  {
     name: "Camel",
-    code: `(* A camel, in the ocaml.org palette. *)
+    code: `(* ProcessingML — the OCaml toplevel, with a canvas attached.
+   Press Run, or hit Ctrl/Cmd + Enter. Examples has more sketches.
+
+   A camel, in the ocaml.org palette. Every value is labelled, so there is
+   no argument order to remember; a call ending in () is one that takes an
+   optional argument. Numbers are int when they count something or land on
+   the pixel grid and float when they are geometry. *)
 
 let sand  = (250, 248, 243)   (* #faf8f3 *)
 let dune  = (231, 181, 115)   (* #e7b573 *)
@@ -133,6 +104,41 @@ let () =
   ellipse ~x:200. ~y:274. ~w:150. ~h:26.;
   leg ~hip:(178., 256.) ~knee:(188., 304.) ~foot:(178., 350.) coat;
   leg ~hip:(270., 252.) ~knee:(262., 304.) ~foot:(272., 350.) coat
+`,
+  },
+
+  {
+    name: "Shapes",
+    code: `(* ProcessingML — the OCaml toplevel, with a canvas attached.
+   Press Run, or hit Ctrl/Cmd + Enter.
+
+   Every value is labelled, so there is no argument order to remember and
+   no way to transpose ~w and ~h by accident. A call ending in () is one
+   that takes an optional argument — here ~a (alpha) and ~r (corner radius).
+
+   Numbers are int when they count something or land on the pixel grid
+   (canvas size, text, colour channels, fps) and float when they are
+   geometry that gets computed, rotated or animated. *)
+
+let () =
+  size ~w:400 ~h:400;
+  background ~r:252 ~g:250 ~b:245 ();
+
+  no_stroke ();
+  fill ~r:244 ~g:114 ~b:94 ();
+  ellipse ~x:150. ~y:150. ~w:180. ~h:180.;
+
+  fill ~a:190 ~r:80 ~g:140 ~b:220 ();
+  rect ~r:14. ~x:170. ~y:170. ~w:170. ~h:170. ();
+
+  no_fill ();
+  stroke ~r:40 ~g:40 ~b:40 ();
+  stroke_weight 3.;
+  triangle ~x1:60. ~y1:350. ~x2:200. ~y2:240. ~x3:340. ~y3:350.;
+
+  no_stroke ();
+  fill ~r:40 ~g:40 ~b:40 ();
+  text ~size:15 ~x:20 ~y:32 "ellipse, rect, triangle"
 `,
   },
 
